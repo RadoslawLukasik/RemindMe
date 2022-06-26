@@ -7,3 +7,4 @@ version 1.1 (tested on Linux Mint 20.3 XFCE)
 
 Folder RemindMe_1.1_amd64 contains files for creating the *.deb file
 Source code is in RemindMe folder.
+This program was compiled in Code::Blocks 20:03
