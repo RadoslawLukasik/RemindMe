@@ -356,7 +356,7 @@ void remove_item(GtkWidget *widget, gpointer selection) {
         gint *i = gtk_tree_path_get_indices(path);
         listselected = i[0];
         if(listselected < NumEvent){// propably we don't need it
-            dialog = gtk_message_dialog_new (GTK_WINDOW (window), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_YES_NO, "%s", szLangStr[opt.lang][0]);
+            dialog = gtk_message_dialog_new (GTK_WINDOW (window), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_YES_NO, "%s", szLangStr[opt.lang][msgAskDel]);
             gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER);
             if(gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_YES)
                 delete_item();
