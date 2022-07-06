@@ -62,9 +62,9 @@ typedef struct events {
 
 XAppStatusIcon *status;
 GtkWidget *list;
-GtkWidget *window,*wndopt,*wndedit, *wndevent;
+GtkWidget *window,*wndopt,*wndedit, *wndevent, *event_find;
 GtkTreeSelection *selection;
-GtkWidget *event_message, *event_year, *event_month, *event_day, *event_hour, *event_min, *event_period, *event_period_type, *event_repeat_num, *event_notification_before, *event_find;
+GtkWidget *event_message, *event_year, *event_month, *event_day, *event_hour, *event_min, *event_period, *event_period_type, *event_repeat_num, *event_notification_before, *event_cal;
 GtkWidget *opt_sound, *opt_lang, *opt_startmini, *opt_dontclose, *opt_showoldremonce;
 GtkWidget *postponed_combo, *postponed_spin;
 GtkListStore *store;
@@ -436,6 +436,26 @@ void init_list(GtkWidget *list) {
     //g_object_unref(store);
 }
 
+// linking calendar signals with spin buttons signal "value-changed"
+void chg_cal(GtkWidget *widget, gpointer data) {
+    guint y,m,d;
+    gtk_calendar_get_date(GTK_CALENDAR(event_cal),&y,&m,&d);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(event_year),y);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(event_month),m+1);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(event_day),d);
+}
+
+void chg_event_ym(GtkWidget *widget, gpointer data) {
+    guint y = gtk_spin_button_get_value(GTK_SPIN_BUTTON(event_year));
+    guint m = gtk_spin_button_get_value(GTK_SPIN_BUTTON(event_month));
+    gtk_calendar_select_month(GTK_CALENDAR(event_cal),m-1,y);
+}
+
+void chg_event_d(GtkWidget *widget, gpointer data) {
+    guint v = gtk_spin_button_get_value(GTK_SPIN_BUTTON(event_day));
+    gtk_calendar_select_day(GTK_CALENDAR(event_cal),v);
+}
+
 // user clicked Cancel in the add/edit event window
 void edit_cancel(GtkWidget *widget, gpointer data) {
     gtk_widget_destroy(wndedit);
@@ -541,23 +561,35 @@ void init_edit_wnd(void){
     gtk_box_pack_start(GTK_BOX(hbox2), label, FALSE, TRUE, 2);
     gtk_box_pack_end(GTK_BOX(hbox2), event_day, FALSE, TRUE, 2);
     gtk_box_pack_start(GTK_BOX(vbox2), hbox2, FALSE, TRUE, 2);
+
+
     gtk_box_pack_start(GTK_BOX(hbox), vbox2, FALSE, TRUE, 2);
+    event_cal = gtk_calendar_new();
+    chg_event_ym(NULL,NULL);
+    chg_event_d(NULL,NULL);
+    gtk_box_pack_start(GTK_BOX(hbox),event_cal,FALSE,TRUE,4);
     // hour
+    vbox2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+    label = gtk_label_new(szLangStr[opt.lang][enLblHour]);
+    gtk_box_pack_start(GTK_BOX(vbox2), label, FALSE, TRUE, 2);
+    event_hour = gtk_spin_button_new_with_range(0,23,1);
+    gtk_orientable_set_orientation(GTK_ORIENTABLE(event_hour),GTK_ORIENTATION_VERTICAL);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(event_hour),eventnew.hour);
+    gtk_spin_button_set_wrap(GTK_SPIN_BUTTON(event_hour),TRUE);
     label = gtk_label_new(":");
     event_min = gtk_spin_button_new_with_range(0,59,1);
     gtk_orientable_set_orientation(GTK_ORIENTABLE(event_min),GTK_ORIENTATION_VERTICAL);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(event_min),eventnew.min);
     gtk_spin_button_set_wrap(GTK_SPIN_BUTTON(event_min),TRUE);
-    gtk_box_pack_end(GTK_BOX(hbox), event_min, FALSE, TRUE, 2);
-    gtk_box_pack_end(GTK_BOX(hbox), label, FALSE, TRUE, 2);
-    label = gtk_label_new(szLangStr[opt.lang][enLblHour]);
-    event_hour = gtk_spin_button_new_with_range(0,23,1);
-    gtk_orientable_set_orientation(GTK_ORIENTABLE(event_hour),GTK_ORIENTATION_VERTICAL);
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(event_hour),eventnew.hour);
-    gtk_spin_button_set_wrap(GTK_SPIN_BUTTON(event_hour),TRUE);
-    gtk_box_pack_end(GTK_BOX(hbox), event_hour, FALSE, TRUE, 2);
-    gtk_box_pack_end(GTK_BOX(hbox), label, FALSE, TRUE, 2);
-    gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, TRUE, 2);
+
+    gtk_box_pack_start(GTK_BOX(hbox2), event_min, FALSE, FALSE, 2);
+    gtk_box_pack_start(GTK_BOX(hbox2), label, FALSE, TRUE, 2);
+    gtk_box_pack_start(GTK_BOX(hbox2), event_hour, FALSE, FALSE, 2);
+
+    gtk_box_pack_start(GTK_BOX(vbox2), hbox2, FALSE, TRUE, 2);
+    gtk_box_pack_end(GTK_BOX(hbox), vbox2, FALSE, TRUE, 2);
+    gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 2);
     // separator
     separator = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_box_pack_start(GTK_BOX(vbox), separator, TRUE, TRUE, 2);
@@ -618,6 +650,16 @@ void init_edit_wnd(void){
     // signals
     g_signal_connect(G_OBJECT(btnok), "clicked", G_CALLBACK(edit_ok), NULL);
     g_signal_connect(G_OBJECT(btncancel), "clicked", G_CALLBACK(edit_cancel), NULL);
+    g_signal_connect(G_OBJECT(event_cal), "day_selected", G_CALLBACK(chg_cal), NULL);
+    g_signal_connect(G_OBJECT(event_cal), "month-changed", G_CALLBACK(chg_cal), NULL);
+    g_signal_connect(G_OBJECT(event_cal), "prev-month", G_CALLBACK(chg_cal), NULL);
+    g_signal_connect(G_OBJECT(event_cal), "next-month", G_CALLBACK(chg_cal), NULL);
+    g_signal_connect(G_OBJECT(event_cal), "prev-year", G_CALLBACK(chg_cal), NULL);
+    g_signal_connect(G_OBJECT(event_cal), "next-year", G_CALLBACK(chg_cal), NULL);
+
+    g_signal_connect(G_OBJECT(event_year), "value-changed", G_CALLBACK(chg_event_ym), NULL);
+    g_signal_connect(G_OBJECT(event_month), "value-changed", G_CALLBACK(chg_event_ym), NULL);
+    g_signal_connect(G_OBJECT(event_day), "value-changed", G_CALLBACK(chg_event_d), NULL);
     g_signal_connect (G_OBJECT(wndedit), "delete_event", G_CALLBACK (edit_delete_event), NULL);
 
     gtk_widget_show_all(wndedit);

@@ -1,0 +1,6 @@
+1.2
+- added Calendar in add/edit window
+1.1
+- added option Show old reminders only once
+- added status icon
+- fixed some bugs
